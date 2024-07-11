@@ -1,70 +1,149 @@
 #![allow(clippy::result_large_err)]
 
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::entrypoint::ProgramResult;
 
-declare_id!("72f2NjdPWhrkZWhsqT35YUNS9QnW5Bm5VA1272auPsch");
+declare_id!("CczRYjxTpfKZ18afKZZoAH2Z54UQhMJiN6MDeVTb1uhy");
 
 #[program]
-pub mod fundhive {
-    use super::*;
+pub mod fundhive_contract {
+  use super::*;
 
-  pub fn close(_ctx: Context<CloseFundhive>) -> Result<()> {
+  //creates a campaign
+  pub fn create(
+    ctx: Context<Create>,
+    name: String,
+    description: String,
+    target_amount: u64,
+    project_url: String,
+    progress_update_url: String,
+    project_image_url: String,
+    category: String
+  ) -> ProgramResult {
+    let campaign = &mut ctx.accounts.campaign;
+    campaign.name = name;
+    campaign.description = description;
+    campaign.target_amount = target_amount;
+    campaign.project_url = project_url;
+    campaign.progress_update_url = progress_update_url;
+    campaign.project_image_url = project_image_url;
+    campaign.category = category;
+    campaign.amount_donated = 0;
+    campaign.amount_withdrawn = 0;
+    campaign.admin = *ctx.accounts.user.key;
     Ok(())
   }
 
-  pub fn decrement(ctx: Context<Update>) -> Result<()> {
-    ctx.accounts.fundhive.count = ctx.accounts.fundhive.count.checked_sub(1).unwrap();
+
+
+  //Withdraw from a campaign
+  pub fn withdraw(ctx: Context<Withdraw>, amount: u64) -> ProgramResult {
+    let campaign = &mut ctx.accounts.campaign;
+    let user = &mut ctx.accounts.user;
+    //restricts Withdrawal to campaign admin
+    if campaign.admin != *user.key {
+      return Err(ProgramError::IncorrectProgramId);
+    }
+    let rent_balance = Rent::get()?.minimum_balance(campaign.to_account_info().data_len());
+    if **campaign.to_account_info().lamports.borrow() - rent_balance < amount {
+      return Err(ProgramError::InsufficientFunds);
+    }
+    **campaign.to_account_info().try_borrow_mut_lamports()? -= amount;
+    **user.to_account_info().try_borrow_mut_lamports()? += amount;
+    (&mut ctx.accounts.campaign).amount_withdrawn += amount;
     Ok(())
   }
 
-  pub fn increment(ctx: Context<Update>) -> Result<()> {
-    ctx.accounts.fundhive.count = ctx.accounts.fundhive.count.checked_add(1).unwrap();
+
+
+  //Donate to a campaign
+  pub fn donate(ctx: Context<Donate>, amount: u64) -> ProgramResult {
+    let ix = anchor_lang::solana_program::system_instruction::transfer(
+      &ctx.accounts.user.key(),
+      &ctx.accounts.campaign.key(),
+      amount
+    );
+    // Store the result of the invoke function call
+    let result = anchor_lang::solana_program::program::invoke(
+      &ix,
+      &[ctx.accounts.user.to_account_info(), ctx.accounts.campaign.to_account_info()]
+    );
+    // Check if the invoke operation was successful
+    if let Err(e) = result {
+      return Err(e.into()); // Convert the error to a ProgramResult
+    }
+    // Proceed with the rest of the function
+    (&mut ctx.accounts.campaign).amount_donated += amount;
     Ok(())
   }
 
-  pub fn initialize(_ctx: Context<InitializeFundhive>) -> Result<()> {
-    Ok(())
-  }
+    //Get the campaign
+    pub fn get_campaign(ctx: Context<GetCampaign>) -> ProgramResult {
+      let campaign = &ctx.accounts.campaign;
+      let user = &ctx.accounts.user;
+      if campaign.admin != *user.key {
+        return Err(ProgramError::IncorrectProgramId);
+      }
+      Ok(())
+    }
 
-  pub fn set(ctx: Context<Update>, value: u8) -> Result<()> {
-    ctx.accounts.fundhive.count = value.clone();
-    Ok(())
-  }
+    
 }
 
 #[derive(Accounts)]
-pub struct InitializeFundhive<'info> {
-  #[account(mut)]
-  pub payer: Signer<'info>,
-
+pub struct Create<'info> {
   #[account(
-  init,
-  space = 8 + Fundhive::INIT_SPACE,
-  payer = payer
+    init,
+    payer = user,
+    space = 9000,
+    seeds = [b"CROWDFUND".as_ref(), user.key().as_ref()],
+    bump
   )]
-  pub fundhive: Account<'info, Fundhive>,
+  pub campaign: Account<'info, Campaign>,
+  #[account(mut)]
+  pub user: Signer<'info>,
   pub system_program: Program<'info, System>,
 }
-#[derive(Accounts)]
-pub struct CloseFundhive<'info> {
-  #[account(mut)]
-  pub payer: Signer<'info>,
 
-  #[account(
-  mut,
-  close = payer, // close account and return lamports to payer
-  )]
-  pub fundhive: Account<'info, Fundhive>,
+
+#[derive(Accounts)]
+pub struct Withdraw<'info> {
+  #[account(mut)]
+  pub campaign: Account<'info, Campaign>,
+  #[account(mut)]
+  pub user: Signer<'info>,
+}
+
+
+
+#[derive(Accounts)]
+pub struct Donate<'info> {
+  #[account(mut)]
+  pub campaign: Account<'info, Campaign>,
+  #[account(mut)]
+  pub user: Signer<'info>,
+  pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
-pub struct Update<'info> {
+pub struct GetCampaign<'info> {
   #[account(mut)]
-  pub fundhive: Account<'info, Fundhive>,
+  pub campaign: Account<'info, Campaign>,
+  #[account(mut)]
+  pub user: Signer<'info>,
 }
+
 
 #[account]
-#[derive(InitSpace)]
-pub struct Fundhive {
-  count: u8,
+pub struct Campaign {
+  pub admin: Pubkey,
+  pub name: String,
+  pub description: String,
+  pub target_amount: u64,
+  pub project_url: String,
+  pub progress_update_url: String,
+  pub project_image_url: String,
+  pub category: String,
+  pub amount_donated: u64,
+  pub amount_withdrawn: u64,
 }

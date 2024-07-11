@@ -84,7 +84,7 @@ export function ClusterProvider({ children }: { children: ReactNode }) {
     cluster,
     clusters: clusters.sort((a, b) => (a.name > b.name ? 1 : -1)),
     addCluster: (cluster: Cluster) => {
-      try {
+       try {
         new Connection(cluster.endpoint);
         setClusters([...clusters, cluster]);
       } catch (err) {

@@ -1,11 +1,15 @@
 [toolchain]
+anchor_version = "0.29.0"
 
 [features]
 seeds = false
 skip-lint = false
 
 [programs.localnet]
-fundhive = "72f2NjdPWhrkZWhsqT35YUNS9QnW5Bm5VA1272auPsch"
+fundhive = "FDXqXP54rTnwXjeKShPQ2o2ioepGAod4RPAhHCvc98xo"
+
+[programs.devnet]
+fundraiser = "FDXqXP54rTnwXjeKShPQ2o2ioepGAod4RPAhHCvc98xo"
 
 [registry]
 url = "https://api.apr.dev"
