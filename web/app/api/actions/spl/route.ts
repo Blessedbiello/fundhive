@@ -92,14 +92,15 @@ export const POST = async (req: Request) => {
     }
 
     const connection = new Connection(clusterApiUrl("devnet"));   //mainnet-beta
-    const decimals = 6; // In the example, we use 6 decimals for USDC, but you can use any SPL token
+    // const decimals = 6; // In the example, we use 6 decimals for USDC, but you can use any SPL token
     const mintAddress = new PublicKey(SOLANA_MAINNET_USDC_PUBKEY); // replace this with any SPL token mint address
 
     // converting value to fractional units
+    const transferAmount: number = parseFloat(amount.toString());
 
-    let transferAmount: any = parseFloat(amount.toString());
-    transferAmount = transferAmount.toFixed(decimals);
-    transferAmount = transferAmount * Math.pow(10, decimals);
+    // let transferAmount: any = parseFloat(amount.toString());
+    // transferAmount = transferAmount.toFixed(decimals);
+    // transferAmount = transferAmount * Math.pow(10, decimals);
 
     const fromTokenAccount = await splToken.getAssociatedTokenAddress(
       mintAddress,
@@ -201,3 +202,5 @@ function validatedQueryParams(requestUrl: URL) {
     toPubkey,
   };
 }
+
+
