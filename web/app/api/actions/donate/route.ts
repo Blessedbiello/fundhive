@@ -195,7 +195,7 @@ import {
 } from "@solana/web3.js";
 
 const DEFAULT_SOL_ADDRESS: PublicKey = new PublicKey(
-  "trCJczPeU7VbziS2r1mfMfpAuFABEJQjvinnwRndh5C" // clark wallet
+  "trCJczPeU7VbziS2r1mfMfpAuFABEJQjvinnwRndh5C" // bprime's wallet
 );
 
 const DEFAULT_SOL_AMOUNT: number = 0.1;
@@ -239,9 +239,9 @@ export const GET = async (req: Request) => {
     ).toString();
 
     const payload: ActionGetResponse = {
-      title: "Donate SoL to Clark",
-      icon: new URL("/pic.png", requestUrl.origin).toString(),
-      description: "Don't worry,this donation is in solana dev network.",
+      title: "Donate SoL to Bprime",
+      icon: new URL("/donateblinks.jpg", requestUrl.origin).toString(),
+      description: "howdy, this donation is in solana devnet.",
       label: "Donate",
       links: {
         actions: [
@@ -250,7 +250,7 @@ export const GET = async (req: Request) => {
             href: `${baseHref}&amount=${amount * 1}`,
           },
           {
-            label: `Send ${amount * 2} SOL`, // button text
+            label: `Send ${amount * 3} SOL`, // button text
             href: `${baseHref}&amount=${amount * 2}`,
           },
           {
